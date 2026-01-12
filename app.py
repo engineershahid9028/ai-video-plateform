@@ -1,3 +1,5 @@
+import requests
+AI_ENGINE_URL = "https://randa-leggy-ronald.ngrok-free.dev"
 from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 import sqlite3
@@ -135,3 +137,4 @@ def generate(prompt: str = Form(...), email: str = Form(...)):
         "<p>This is demo mode on Railway.</p>"
         f"<a href='/dashboard?email={email}'>Back</a>"
     )
+
