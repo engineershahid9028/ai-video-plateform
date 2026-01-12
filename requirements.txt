@@ -1,7 +1,5 @@
 fastapi
 uvicorn
-passlib[bcrypt]
+passlib
 python-multipart
 requests
-railway-rebuild-trigger
-
