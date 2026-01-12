@@ -32,14 +32,20 @@ conn.commit()
 # ---------------- SECURITY ----------------
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+import hashlib
+
+def normalize_password(password: str) -> str:
+    # Pre-hash with SHA256 so bcrypt never sees long input
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
 def hash_password(password):
     password = normalize_password(password)
     return pwd_context.hash(password)
 
-
 def verify_password(password, hashed):
     password = normalize_password(password)
     return pwd_context.verify(password, hashed)
+
 
 
 # ---------------- CREDITS ----------------
@@ -167,4 +173,5 @@ def generate(prompt: str = Form(...), email: str = Form(...)):
 
     except Exception as e:
         return HTMLResponse(f"<h3>AI Engine Error</h3><pre>{e}</pre>")
+
 
