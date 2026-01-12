@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS users (
 conn.commit()
 
 # ---------------- SECURITY ----------------
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+
 
 import hashlib
 
@@ -173,5 +174,6 @@ def generate(prompt: str = Form(...), email: str = Form(...)):
 
     except Exception as e:
         return HTMLResponse(f"<h3>AI Engine Error</h3><pre>{e}</pre>")
+
 
 
