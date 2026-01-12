@@ -1,15 +1,20 @@
+import os
+import sqlite3
 import requests
-AI_ENGINE_URL = "https://randa-leggy-ronald.ngrok-free.dev"
 from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-import sqlite3
 from passlib.context import CryptContext
 from datetime import date
 
+# ---------------- CONFIG ----------------
+AI_ENGINE_URL = "https://randa-leggy-ronald.ngrok-free.dev"
+
+DB_PATH = os.getenv("DB_PATH", "users.db")
+
 app = FastAPI()
 
-# ---------- Database ----------
-conn = sqlite3.connect("users.db", check_same_thread=False)
+# ---------------- DATABASE ----------------
+conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 c = conn.cursor()
 
 c.execute("""
@@ -23,7 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
 """)
 conn.commit()
 
-# ---------- Security ----------
+# ---------------- SECURITY ----------------
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password):
@@ -32,7 +37,7 @@ def hash_password(password):
 def verify_password(password, hashed):
     return pwd_context.verify(password, hashed)
 
-# ---------- Credits ----------
+# ---------------- CREDITS ----------------
 DAILY_CREDITS = 5
 
 def reset_daily_credits(email):
@@ -44,7 +49,7 @@ def reset_daily_credits(email):
                   (DAILY_CREDITS, today, email))
         conn.commit()
 
-# ---------- Pages ----------
+# ---------------- UI ----------------
 
 LOGIN_PAGE = """
 <html><body style="background:#0e0e10;color:white;font-family:Arial">
@@ -74,7 +79,7 @@ SIGNUP_PAGE = """
 DASHBOARD = """
 <html><body style="background:#0e0e10;color:white;font-family:Arial">
 <div style="width:600px;margin:50px auto">
-<h1>AI Video Generator (Railway)</h1>
+<h1>AI Video Generator</h1>
 <p>Credits today: {credits}</p>
 <form method="post" action="/generate">
 <input type="hidden" name="email" value="{email}">
@@ -85,7 +90,7 @@ DASHBOARD = """
 </div></body></html>
 """
 
-# ---------- Routes ----------
+# ---------------- ROUTES ----------------
 
 @app.get("/", response_class=HTMLResponse)
 def home():
@@ -98,6 +103,7 @@ def login_page():
 @app.post("/login")
 def login(email: str = Form(...), password: str = Form(...)):
     user = c.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+
     if not user or not verify_password(password, user[2]):
         return HTMLResponse("<h3>Invalid login</h3><a href='/login'>Try again</a>")
 
@@ -123,32 +129,36 @@ def signup(email: str = Form(...), password: str = Form(...)):
     except Exception as e:
         return HTMLResponse(f"<h3>Signup error</h3><pre>{e}</pre>")
 
-
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(email: str):
     reset_daily_credits(email)
-    credits = c.execute("SELECT credits FROM users WHERE email=?", (email,)).fetchone()[0]
+
+    row = c.execute("SELECT credits FROM users WHERE email=?", (email,)).fetchone()
+    credits = row[0] if row else 0
 
     html = DASHBOARD.replace("{credits}", str(credits)) \
                     .replace("{email}", email) \
                     .replace("{message}", "")
 
     return html
+
 @app.post("/generate")
 def generate(prompt: str = Form(...), email: str = Form(...)):
     try:
-        res = requests.get(f"{AI_ENGINE_URL}/generate", params={"prompt": prompt}, timeout=600)
-        data = res.json()
+        res = requests.get(
+            f"{AI_ENGINE_URL}/generate",
+            params={"prompt": prompt},
+            timeout=600
+        )
 
+        data = res.json()
         video_url = f"{AI_ENGINE_URL}/video/{data['video']}"
 
         return HTMLResponse(
-            f"<h2>Your AI Video is ready</h2>"
+            f"<h2>Your AI Video is Ready</h2>"
             f"<video src='{video_url}' controls style='width:100%'></video><br><br>"
             f"<a href='/dashboard?email={email}'>Back</a>"
         )
+
     except Exception as e:
         return HTMLResponse(f"<h3>AI Engine Error</h3><pre>{e}</pre>")
-
-
-
