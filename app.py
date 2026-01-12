@@ -5,7 +5,8 @@ from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from passlib.context import CryptContext
 from datetime import date
-
+def normalize_password(password: str) -> str:
+    return password.encode("utf-8")[:72].decode("utf-8", errors="ignore")
 # ---------------- CONFIG ----------------
 AI_ENGINE_URL = "https://randa-leggy-ronald.ngrok-free.dev"
 
@@ -32,10 +33,14 @@ conn.commit()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password):
+    password = normalize_password(password)
     return pwd_context.hash(password)
 
+
 def verify_password(password, hashed):
+    password = normalize_password(password)
     return pwd_context.verify(password, hashed)
+
 
 # ---------------- CREDITS ----------------
 DAILY_CREDITS = 5
@@ -162,3 +167,4 @@ def generate(prompt: str = Form(...), email: str = Form(...)):
 
     except Exception as e:
         return HTMLResponse(f"<h3>AI Engine Error</h3><pre>{e}</pre>")
+
