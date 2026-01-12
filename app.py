@@ -129,12 +129,20 @@ def dashboard(email: str):
                     .replace("{message}", "")
 
     return html
-
 @app.post("/generate")
 def generate(prompt: str = Form(...), email: str = Form(...)):
-    return HTMLResponse(
-        "<h2>AI engine will be connected soon.</h2>"
-        "<p>This is demo mode on Railway.</p>"
-        f"<a href='/dashboard?email={email}'>Back</a>"
-    )
+    try:
+        res = requests.get(f"{AI_ENGINE_URL}/generate", params={"prompt": prompt}, timeout=600)
+        data = res.json()
+
+        video_url = f"{AI_ENGINE_URL}/video/{data['video']}"
+
+        return HTMLResponse(
+            f"<h2>Your AI Video is ready</h2>"
+            f"<video src='{video_url}' controls style='width:100%'></video><br><br>"
+            f"<a href='/dashboard?email={email}'>Back</a>"
+        )
+    except Exception as e:
+        return HTMLResponse(f"<h3>AI Engine Error</h3><pre>{e}</pre>")
+
 
