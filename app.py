@@ -6,7 +6,7 @@ from datetime import date
 
 app = FastAPI()
 
-# ---------------- DATABASE ----------------
+# ---------- Database ----------
 conn = sqlite3.connect("users.db", check_same_thread=False)
 c = conn.cursor()
 
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
 """)
 conn.commit()
 
-# ---------------- SECURITY ----------------
+# ---------- Security ----------
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password):
@@ -30,19 +30,19 @@ def hash_password(password):
 def verify_password(password, hashed):
     return pwd_context.verify(password, hashed)
 
-# ---------------- CREDIT SYSTEM ----------------
+# ---------- Credits ----------
 DAILY_CREDITS = 5
 
 def reset_daily_credits(email):
     today = str(date.today())
     user = c.execute("SELECT credits,last_reset FROM users WHERE email=?", (email,)).fetchone()
 
-    if user[1] != today:
+    if user and user[1] != today:
         c.execute("UPDATE users SET credits=?, last_reset=? WHERE email=?",
                   (DAILY_CREDITS, today, email))
         conn.commit()
 
-# ---------------- UI ----------------
+# ---------- Pages ----------
 
 LOGIN_PAGE = """
 <html><body style="background:#0e0e10;color:white;font-family:Arial">
@@ -72,7 +72,7 @@ SIGNUP_PAGE = """
 DASHBOARD = """
 <html><body style="background:#0e0e10;color:white;font-family:Arial">
 <div style="width:600px;margin:50px auto">
-<h1>AI Video Generator</h1>
+<h1>AI Video Generator (Railway)</h1>
 <p>Credits today: {credits}</p>
 <form method="post" action="/generate">
 <input type="hidden" name="email" value="{email}">
@@ -83,7 +83,7 @@ DASHBOARD = """
 </div></body></html>
 """
 
-# ---------------- ROUTES ----------------
+# ---------- Routes ----------
 
 @app.get("/", response_class=HTMLResponse)
 def home():
