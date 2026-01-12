@@ -5,11 +5,9 @@ from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from passlib.context import CryptContext
 from datetime import date
-def normalize_password(password: str) -> str:
-    return password.encode("utf-8")[:72].decode("utf-8", errors="ignore")
+
 # ---------------- CONFIG ----------------
 AI_ENGINE_URL = "https://randa-leggy-ronald.ngrok-free.dev"
-
 DB_PATH = os.getenv("DB_PATH", "users.db")
 
 app = FastAPI()
@@ -29,25 +27,14 @@ CREATE TABLE IF NOT EXISTS users (
 """)
 conn.commit()
 
-# ---------------- SECURITY ----------------
+# ---------------- SECURITY (NO BCRYPT) ----------------
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
-
-import hashlib
-
-def normalize_password(password: str) -> str:
-    # Pre-hash with SHA256 so bcrypt never sees long input
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
-
 def hash_password(password):
-    password = normalize_password(password)
     return pwd_context.hash(password)
 
 def verify_password(password, hashed):
-    password = normalize_password(password)
     return pwd_context.verify(password, hashed)
-
-
 
 # ---------------- CREDITS ----------------
 DAILY_CREDITS = 5
@@ -57,8 +44,10 @@ def reset_daily_credits(email):
     user = c.execute("SELECT credits,last_reset FROM users WHERE email=?", (email,)).fetchone()
 
     if user and user[1] != today:
-        c.execute("UPDATE users SET credits=?, last_reset=? WHERE email=?",
-                  (DAILY_CREDITS, today, email))
+        c.execute(
+            "UPDATE users SET credits=?, last_reset=? WHERE email=?",
+            (DAILY_CREDITS, today, email)
+        )
         conn.commit()
 
 # ---------------- UI ----------------
@@ -174,6 +163,3 @@ def generate(prompt: str = Form(...), email: str = Form(...)):
 
     except Exception as e:
         return HTMLResponse(f"<h3>AI Engine Error</h3><pre>{e}</pre>")
-
-
-
