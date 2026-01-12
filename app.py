@@ -116,8 +116,13 @@ def signup(email: str = Form(...), password: str = Form(...)):
         )
         conn.commit()
         return RedirectResponse("/login", status_code=302)
-    except:
+
+    except sqlite3.IntegrityError:
         return HTMLResponse("<h3>Email already exists</h3><a href='/signup'>Try again</a>")
+
+    except Exception as e:
+        return HTMLResponse(f"<h3>Signup error</h3><pre>{e}</pre>")
+
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(email: str):
@@ -144,5 +149,6 @@ def generate(prompt: str = Form(...), email: str = Form(...)):
         )
     except Exception as e:
         return HTMLResponse(f"<h3>AI Engine Error</h3><pre>{e}</pre>")
+
 
 
